@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:Util="http://schemas.microsoft.com/wix/UtilExtension"><?define RDP-FrontEnd_TargetDir=$(var.RDP-FrontEnd.TargetDir)?>
+	<Product Id="*" Name="RDP_FrontEnd_Setup" Language="1033" Version="1.1.7.0" Manufacturer="Contoso" UpgradeCode="5CFCEA65-29EE-410C-8691-7124A1DB646F">
+		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed. Setup will now exit." />
+		<MediaTemplate EmbedCab="yes" />
+
+		<Feature Id="ProductFeature" Title="RDP_FrontEnd_Setup" Level="1">
+			<ComponentGroupRef Id="APPLICATIONROOTDIRECTORY_files" />
+      <ComponentRef Id="CreateEventSource32BitFullNet4"/>
+		</Feature>
+	</Product>
+
+	<Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="APPLICATIONROOTDIRECTORY" Name="Contoso RDP Connect" />
+      </Directory>
+    </Directory>
+  </Fragment>
+
+	<Fragment>
+	  <ComponentGroup Id="APPLICATIONROOTDIRECTORY_files" Directory="APPLICATIONROOTDIRECTORY">
+	    <Component Id="RDP_FrontEnd.exe" Guid="a44a94c3-ce7d-4903-bf63-2f2c8eb26899">
+	      <File Id="RDP_FrontEnd.exe" Name="RDP-FrontEnd.exe" Source="$(var.RDP-FrontEnd_TargetDir)RDP-FrontEnd.exe" />
+	    </Component>
+	    <Component Id="RDP_FrontEnd.exe.config" Guid="57ebf17e-ee01-4fb2-8fa1-e8ad9e719208">
+	      <File Id="RDP_FrontEnd.exe.config" Name="RDP-FrontEnd.exe.config" Source="$(var.RDP-FrontEnd_TargetDir)RDP-FrontEnd.exe.config" />
+	    </Component>
+	  </ComponentGroup>
+	</Fragment>
+
+  <Fragment>
+    <Component Id="CreateEventSource32BitFullNet4" Guid="D8A0F907-693C-4D9C-A111-269E860443EB" Directory="APPLICATIONROOTDIRECTORY">
+      <CreateFolder/>
+      <!-- Create an Event Source -->
+      <Util:EventSource
+            xmlns:Util="http://schemas.microsoft.com/wix/UtilExtension"
+            Name="Contoso RDP Connect"
+            Log="Application"
+            EventMessageFile="%systemroot%\Microsoft.NET\Framework\v4.0.30319\EventLogMessages.dll"/>
+    </Component>
+  </Fragment>
+</Wix>

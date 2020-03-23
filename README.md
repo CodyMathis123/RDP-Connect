@@ -1,2 +1,3 @@
-# RDP-Connect
-C# App used to present system list to user based off Ander's Client Health DB
+RDP FrontEnd that Dart uses, presented via Citrix.
+
+It queries the ClientHealth database in order to provide users a list of the machines they are the last logged on user for.

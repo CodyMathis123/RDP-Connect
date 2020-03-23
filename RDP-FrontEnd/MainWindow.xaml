@@ -1,0 +1,47 @@
+﻿<Controls:MetroWindow x:Class="RDP_FrontEnd.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        Title="RDP Connect" Height="600" Width="800">
+    <DockPanel>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="6*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <DockPanel Height="40" Grid.Row="1" Margin="5" >
+                <Label x:Name="Label_Computer" Content="Computer:" Width="Auto" FontSize="11" VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                <Button Name="Button_Connect" IsDefault="True" Width="Auto" Margin="5" Content="Connect" DockPanel.Dock="Right" Click="Button_Connect_Click"/>
+                <TextBox Name="Textbox_Computer" Margin="5" IsReadOnly="True"/>
+            </DockPanel>
+            <DockPanel Grid.Row="0" >
+                <Grid  DockPanel.Dock="Top">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Menu HorizontalAlignment="Right" Grid.Column="2" BorderThickness="5" >
+                        <MenuItem Header="Settings" FlowDirection="RightToLeft">
+                            <MenuItem Name="MenuItem_MultiMon" IsCheckable="True" Header="Multi Monitor" StaysOpenOnClick="True" />
+                            <MenuItem Name="MenuItem_AdminSession" IsCheckable="True" Header="Admin Session" StaysOpenOnClick="True" />
+                        </MenuItem>
+                    </Menu>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="5,5,0,5" Grid.ColumnSpan="2">
+                        <Label Name="Label_KnownEndpoints" Content="Known endpoints for user" HorizontalAlignment="Center" />
+                        <ComboBox Name="ComboBox_UsernameOptions" SelectionChanged="ComboBox_UsernameOptions_SelectionChanged"/>
+                    </StackPanel>
+                </Grid>
+                <DataGrid Name="DataGrid_KnownEndpoints" Margin="5" GridLinesVisibility="Vertical" MouseDoubleClick="DataGrid_KnownEndpoints_MouseDoubleClick" SelectionChanged="DataGrid_KnownEndpoints_SelectionChanged" ItemsSource="{Binding EndpointBinding}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Hostname" IsReadOnly="True" Binding="{Binding Path=Hostname}"/>
+                        <DataGridTextColumn Header="Operating System" IsReadOnly="True" Binding="{Binding Path=OperatingSystem}"/>
+                        <DataGridTextColumn Header="Description" IsReadOnly="True" Binding="{Binding Path=Description}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+            <Controls:ProgressRing Name="ProgressRing"/>
+        </Grid>
+    </DockPanel>
+</Controls:MetroWindow>

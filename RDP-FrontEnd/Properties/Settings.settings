@@ -1,0 +1,33 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="RDP_FrontEnd.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="SQLInstance" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">DEFAULT</Value>
+    </Setting>
+    <Setting Name="SQLdb" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">ClientHealth</Value>
+    </Setting>
+    <Setting Name="SQLtable" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">Clients</Value>
+    </Setting>
+    <Setting Name="Company" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">Contoso</Value>
+    </Setting>
+    <Setting Name="RDP_ComputerGroup_Enabled" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="RDP_UserGroup_Enabled" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="SQLServer" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">ClientHeatlhDB.contoso.com</Value>
+    </Setting>
+    <Setting Name="RDP_ComputerGroup" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">RDPGW Computers Allowed</Value>
+    </Setting>
+    <Setting Name="RDP_UserGroup" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">RDPGW Users Allowed</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

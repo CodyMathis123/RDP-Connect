@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Weavers>
+  <costura IncludeDebugSymbls='false'>
+    <IncludeAssemblies>
+      MahApps.Metro
+      System.Windows.Interactivity
+      ControlzEx
+    </IncludeAssemblies>
+  </costura>
+</Weavers>
