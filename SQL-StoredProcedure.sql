@@ -3,7 +3,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 -- =============================================
--- Author:		Cody Mathis
+-- Author:	Cody Mathis
 -- Create date: 2020-03-23
 -- Description:	Return a list of machines from the Client Health DB for the specified username
 -- =============================================
