@@ -73,15 +73,11 @@ namespace RDP_FrontEnd
                 {
                     WriteError((string.Format("Failed to load endpoints from database for user {0}", whoseRunning)), 1200);
                 }
-                List<string> userNames = GetUserNames(whoseRunning);
-                foreach (string userName in userNames)
+                ComboBoxItem cbi = new ComboBoxItem
                 {
-                    ComboBoxItem cbi = new ComboBoxItem
-                    {
-                        Content = userName
-                    };
-                    ComboBox_UsernameOptions.Items.Add(cbi);
-                }
+                    Content = whoseRunning
+                };
+                ComboBox_UsernameOptions.Items.Add(cbi);
                 foreach (ComboBoxItem item in ComboBox_UsernameOptions.Items)
                 {
                     string userLookup = string.Format("\\{0}", whoseRunning);
@@ -220,7 +216,6 @@ namespace RDP_FrontEnd
         {
             List<Endpoint> endPoints = new List<Endpoint>();
             List<string> citrixClient = CitrixRunningOn();
-            string accountNumber = Regex.Replace(userName.ToString(), @"[^\d]", string.Empty);
             try
             {
                 //' Get connection string
@@ -235,7 +230,7 @@ namespace RDP_FrontEnd
 
                 //' Invoke SQL command
                 SqlCommand command = connection.CreateCommand();
-                command.CommandText = string.Format("SELECT Hostname,OperatingSystem,LastLoggedOnUser FROM [dbo].[{0}] WHERE (LastLoggedOnUser LIKE '%{1}' or LastLoggedOnUser LIKE '%{2}') AND HostName NOT LIKE 'S____V-XA7%'", sqlTable, accountNumber, userName);
+                command.CommandText = string.Format("EXEC [dbo].[GetEndpointsForUser] @UserName = N'{0}'", userName);
                 SqlDataReader reader = command.ExecuteReader();
 
                 if (reader.HasRows == true)
@@ -302,56 +297,6 @@ namespace RDP_FrontEnd
             return endPoints;
         }
         
-        private List<string> GetUserNames(string userName)
-        {
-            List<string> userNames = new List<string>();
-            ObservableCollection<User> users = new ObservableCollection<User>();
-            string number = Regex.Replace(userName, @"[^\d]", string.Empty);
-            try
-            {
-                //' Get connection string
-                SqlConnectionStringBuilder connectionString = GetSqlConnectionString();
-
-                //' Connect to SQL server instance
-                SqlConnection connection = new SqlConnection
-                {
-                    ConnectionString = connectionString.ConnectionString
-                };
-                connection.Open();
-
-                //' Invoke SQL command
-                SqlCommand command = connection.CreateCommand();
-                command.CommandText = string.Format("SELECT DISTINCT LastLoggedOnUser FROM [dbo].[{0}] WHERE LastLoggedOnUser LIKE '%{1}'", sqlTable, number);
-                SqlDataReader reader = command.ExecuteReader();
-
-                if (reader.HasRows == true)
-                {
-                    while (reader.Read())
-                    {
-                        string fullUN = reader["LastLoggedOnUser"].ToString();
-                        string domainName = fullUN.Split('\\')[0];
-                        string un = fullUN.Split('\\')[1];
-                        users.Add(new User(domainName, un, fullUN));
-                        userNames.Add(fullUN);
-                    }
-                    reader.Close();
-                    connection.Close();
-                    userNames.Sort();
-                }
-                else
-                {
-                    users.Add(new User("N/A", "N/A", userName));
-                    userNames.Add(userName);
-                }
-            }
-            catch
-            {
-                users.Add(new User("N/A", "N/A", userName));
-                userNames.Add(userName);
-            }
-            return userNames;
-        }
-
         private SqlConnectionStringBuilder GetSqlConnectionString()
         {
             //' Set database connection string
