@@ -15,7 +15,7 @@
 	<Fragment>
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
-        <Directory Id="APPLICATIONROOTDIRECTORY" Name="Contoso RDP Connect" />
+        <Directory Id="APPLICATIONROOTDIRECTORY" Name="RDP Connect" />
       </Directory>
     </Directory>
   </Fragment>
