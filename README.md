@@ -4,6 +4,8 @@ This tool was created for the purposes of presenting users with their machines v
 
 The username that launches the application is used to query the Clients table via stored procedure, and return the machines which they are the 'LastLoggedOnUser' for. It also supports regex replace, and wildcard lookup to identify additional usernames, and provide users a dropdown of their 'alternate' accounts, which also will have computer name lookup occur for. 
 
+Once an endpoint is selected, you can click connect to initiate an RDP connection to the device. The result is an RDP session originating from the Citrix server that ran the RDP Connect tool. 
+
 I will work to add more information, examples, and features as I have time. Feel free to make a pull request!
 
 Right now, the config file would need edited either before compiling in Visual Studio, or after the install with a script. I'm creating an MSI installer using WIX Toolset. I hope to add MSI Properties to configure the XML config. 
