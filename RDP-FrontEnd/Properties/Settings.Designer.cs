@@ -12,7 +12,7 @@ namespace RDP_FrontEnd.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.5.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.4.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -38,15 +38,6 @@ namespace RDP_FrontEnd.Properties {
         public string SQLdb {
             get {
                 return ((string)(this["SQLdb"]));
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Clients")]
-        public string SQLtable {
-            get {
-                return ((string)(this["SQLtable"]));
             }
         }
         
@@ -79,7 +70,7 @@ namespace RDP_FrontEnd.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("ClientHeatlhDB.contoso.com")]
+        [global::System.Configuration.DefaultSettingValueAttribute("ClientHealthDB.CONTOSO.COM")]
         public string SQLServer {
             get {
                 return ((string)(this["SQLServer"]));
@@ -101,6 +92,33 @@ namespace RDP_FrontEnd.Properties {
         public string RDP_UserGroup {
             get {
                 return ((string)(this["RDP_UserGroup"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("^(\\D|\\\\)+")]
+        public string RegexUserNameReplace {
+            get {
+                return ((string)(this["RegexUserNameReplace"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool RegexUserNameReplace_Enabled {
+            get {
+                return ((bool)(this["RegexUserNameReplace_Enabled"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("%{0}")]
+        public string FindLikeUsernamesSqlFilter {
+            get {
+                return ((string)(this["FindLikeUsernamesSqlFilter"]));
             }
         }
     }

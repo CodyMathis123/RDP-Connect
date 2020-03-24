@@ -6,13 +6,13 @@ using System.Windows;
 using System.Windows.Controls;
 using MahApps.Metro.Controls;
 using System.DirectoryServices;
-using System.Text.RegularExpressions;
 using System.Data.SqlClient;
 using System.Net.Sockets;
 using System.Net.NetworkInformation;
 using System.ComponentModel;
 using System.Management;
 using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 
 namespace RDP_FrontEnd
 {
@@ -34,14 +34,17 @@ namespace RDP_FrontEnd
         private string sqlServer = Properties.Settings.Default.SQLServer.ToString();
         private string sqlInstance = Properties.Settings.Default.SQLInstance.ToString();
         private string sqlDB = Properties.Settings.Default.SQLdb.ToString();
-        private string sqlTable = Properties.Settings.Default.SQLtable.ToString();
         private string runningOn = System.Environment.GetEnvironmentVariable("COMPUTERNAME");
-        private string whoseRunning = System.Environment.GetEnvironmentVariable("USERNAME");
+        private bool regexUserNameReplaceEnabled = Properties.Settings.Default.RegexUserNameReplace_Enabled;
+        private string regexUserNameReplace = Properties.Settings.Default.RegexUserNameReplace.ToString();
+        private string likeUsernamesSqlFilter = Properties.Settings.Default.FindLikeUsernamesSqlFilter.ToString();
+        private string whoIsRunning = string.Format(@"{0}\{1}", System.Environment.GetEnvironmentVariable("USERDOMAIN"), System.Environment.GetEnvironmentVariable("USERNAME"));
         private bool rdp_ComputerGroupEnabled = Properties.Settings.Default.RDP_ComputerGroup_Enabled;
         private string rdp_ComputerGroup = Properties.Settings.Default.RDP_ComputerGroup.ToString();
         private string rdp_UserGroup = Properties.Settings.Default.RDP_UserGroup.ToString();
         private bool rdp_UserGroupEnabled = Properties.Settings.Default.RDP_UserGroup_Enabled;
         List<Endpoint> endpoints = new List<Endpoint>();
+        List<string> userNames;
         private bool userGroupMembership = false;
         ADObject rdp_UserGroupObj = new ADObject(null,null,null);
 
@@ -50,7 +53,7 @@ namespace RDP_FrontEnd
             InitializeComponent();
             string AppName = string.Format("{0} RDP Connect", company);
             this.Title = AppName;
-            WriteInfo(string.Format("{0} launched {1}", whoseRunning, AppName), 1000);
+            WriteInfo(string.Format("{0} launched {1}", whoIsRunning, AppName), 1000);
             ValidateUser();
             LoadUsersEndpoints();
         }
@@ -63,7 +66,8 @@ namespace RDP_FrontEnd
 
             worker.DoWork += delegate (object s, DoWorkEventArgs args)
             {
-                endpoints = GetUserEndpoints(whoseRunning);
+                userNames = GetUserNames(whoIsRunning);
+                endpoints = GetUserEndpoints(userNames);
             };
 
             // RunWorkerCompleted will fire on the UI thread when the background process is complete
@@ -71,17 +75,19 @@ namespace RDP_FrontEnd
             {
                 if (args.Error != null)
                 {
-                    WriteError((string.Format("Failed to load endpoints from database for user {0}", whoseRunning)), 1200);
+                    WriteError((string.Format("Failed to load endpoints from database for user {0}", whoIsRunning)), 1200);
                 }
-                ComboBoxItem cbi = new ComboBoxItem
+                foreach (string userName in userNames)
                 {
-                    Content = whoseRunning
-                };
-                ComboBox_UsernameOptions.Items.Add(cbi);
+                    ComboBoxItem cbi = new ComboBoxItem
+                    {
+                        Content = userName
+                    };
+                    ComboBox_UsernameOptions.Items.Add(cbi);
+                }
                 foreach (ComboBoxItem item in ComboBox_UsernameOptions.Items)
                 {
-                    string userLookup = string.Format("\\{0}", whoseRunning);
-                    if (item.ToString().Contains(userLookup))
+                    if (item.ToString().Contains(whoIsRunning))
                     {
                         item.IsSelected = true;
                     }
@@ -98,7 +104,7 @@ namespace RDP_FrontEnd
         {
             if (rdp_UserGroupEnabled)
             {
-                ADObject user = GetADObject(whoseRunning, ADObjectClass.User);
+                ADObject user = GetADObject(whoIsRunning, ADObjectClass.User);
                 try
                 {
                     rdp_UserGroupObj = GetADObject(rdp_UserGroup, ADObjectClass.Group);
@@ -113,11 +119,76 @@ namespace RDP_FrontEnd
                 }
                 if (!userGroupMembership)
                 {
-                    WriteWarning(string.Format("User {0} is not in the necessary AD group {1}", whoseRunning, rdp_UserGroup), 1100);
-                    MessageBox.Show(string.Format("User {0} is not in the necessary AD group {1}", whoseRunning, rdp_UserGroup), "RDP user access exception", MessageBoxButton.OK, MessageBoxImage.Error);
+                    WriteWarning(string.Format("User {0} is not in the necessary AD group {1}", whoIsRunning, rdp_UserGroup), 1100);
+                    MessageBox.Show(string.Format("User {0} is not in the necessary AD group {1}", whoIsRunning, rdp_UserGroup), "RDP user access exception", MessageBoxButton.OK, MessageBoxImage.Error);
                     System.Environment.Exit(0);
                 }
             }
+        }
+
+        private List<string> GetUserNames(string userName)
+        {
+            List<string> userNames = new List<string>();
+            ObservableCollection<User> users = new ObservableCollection<User>();
+            try
+            {
+                //' Get connection string
+                SqlConnectionStringBuilder connectionString = GetSqlConnectionString();
+
+                //' Connect to SQL server instance
+                SqlConnection connection = new SqlConnection
+                {
+                    ConnectionString = connectionString.ConnectionString
+                };
+                connection.Open();
+
+                //' Invoke SQL command
+                SqlCommand command = connection.CreateCommand();
+                string filter;
+                string regexReplacedUsername;
+                if (regexUserNameReplaceEnabled)
+                {
+                    regexReplacedUsername = Regex.Replace(userName, regexUserNameReplace, string.Empty);
+                    filter = String.Format(likeUsernamesSqlFilter, regexReplacedUsername);
+                    command.CommandText = string.Format("EXEC [dbo].[GetAlternateUsernames] @UserNameFilter = N'{0}'", filter);
+                    SqlDataReader reader = command.ExecuteReader();
+
+                    if (reader.HasRows == true)
+                    {
+                        while (reader.Read())
+                        {
+                            string fullUN = reader["LastLoggedOnUser"].ToString();
+                            string domainName = fullUN.Split('\\')[0];
+                            string un = fullUN.Split('\\')[1];
+                            users.Add(new User(domainName, un, fullUN));
+                            userNames.Add(fullUN);
+                        }
+                        reader.Close();
+                        connection.Close();
+                        userNames.Sort();
+                    }
+                    else
+                    {
+                        users.Add(new User("N/A", "N/A", userName));
+                        userNames.Add(userName);
+                    }
+                }
+                else
+                {
+                    string fullUN = userName;
+                    string domainName = fullUN.Split('\\')[0];
+                    string un = fullUN.Split('\\')[1];
+                    users.Add(new User(domainName, un, fullUN));
+                    userNames.Add(fullUN);
+                }
+
+            }
+            catch
+            {
+                users.Add(new User("N/A", "N/A", userName));
+                userNames.Add(userName);
+            }
+            return userNames;
         }
 
         private void Button_Connect_Click(object sender, RoutedEventArgs e)
@@ -212,7 +283,7 @@ namespace RDP_FrontEnd
             return result != null;
         }
 
-        private List<Endpoint> GetUserEndpoints(string userName)
+        private List<Endpoint> GetUserEndpoints(List<string> userNames)
         {
             List<Endpoint> endPoints = new List<Endpoint>();
             List<string> citrixClient = CitrixRunningOn();
@@ -226,71 +297,74 @@ namespace RDP_FrontEnd
                 {
                     ConnectionString = connectionString.ConnectionString
                 };
-                connection.Open();
 
                 //' Invoke SQL command
-                SqlCommand command = connection.CreateCommand();
-                command.CommandText = string.Format("EXEC [dbo].[GetEndpointsForUser] @UserName = N'{0}'", userName);
-                SqlDataReader reader = command.ExecuteReader();
-
-                if (reader.HasRows == true)
+                foreach (string userName in userNames)
                 {
-                    while (reader.Read())
+                    connection.Open();
+                    SqlCommand command = connection.CreateCommand();
+                    command.CommandText = string.Format("EXEC [dbo].[GetEndpointsForUser] @UserName = N'{0}'", userName);
+                    SqlDataReader reader = command.ExecuteReader();
+
+                    if (reader.HasRows == true)
                     {
-                        Endpoint data = new Endpoint(reader["Hostname"].ToString(), reader["OperatingSystem"].ToString(), null, reader["LastLoggedOnUser"].ToString(), false );
-                        if (!citrixClient.Contains(data.Hostname) && data.Hostname != runningOn)
+                        while (reader.Read())
                         {
-                            endPoints.Add(data);
+                            Endpoint data = new Endpoint(reader["Hostname"].ToString(), reader["OperatingSystem"].ToString(), null, reader["LastLoggedOnUser"].ToString(), false);
+                            if (!citrixClient.Contains(data.Hostname) && data.Hostname != runningOn)
+                            {
+                                endPoints.Add(data);
+                            }
                         }
-                    }
-                    reader.Close();
-                    connection.Close();
-                    if (rdp_ComputerGroupEnabled)
-                    {
-                        ADObject rdp_ComputerGroupObj = GetADObject(rdp_ComputerGroup, ADObjectClass.Group);
-                        Parallel.ForEach(endPoints, (endpoint) =>
+                        reader.Close();
+                        connection.Close();
+                        if (rdp_ComputerGroupEnabled)
                         {
-                            bool computerGroupMembership = false;
-                            string computerDescription = string.Empty;
-                            ADObject computer = GetADObject(endpoint.Hostname, ADObjectClass.Computer);
-                            if (computer.DistingishedName != null)
+                            ADObject rdp_ComputerGroupObj = GetADObject(rdp_ComputerGroup, ADObjectClass.Group);
+                            Parallel.ForEach(endPoints, (endpoint) =>
                             {
-                                computerGroupMembership = GetADGroupNestedMemberOf(computer.DistingishedName, rdp_ComputerGroupObj.DistingishedName);
-                            }
-                            if (computer.Description != null)
-                            {
-                                computerDescription = computer.Description;
-                            }
-                            endpoint.Description = computerDescription;
-                            endpoint.RDPGW_Allow = computerGroupMembership;
+                                bool computerGroupMembership = false;
+                                string computerDescription = string.Empty;
+                                ADObject computer = GetADObject(endpoint.Hostname, ADObjectClass.Computer);
+                                if (computer.DistingishedName != null)
+                                {
+                                    computerGroupMembership = GetADGroupNestedMemberOf(computer.DistingishedName, rdp_ComputerGroupObj.DistingishedName);
+                                }
+                                if (computer.Description != null)
+                                {
+                                    computerDescription = computer.Description;
+                                }
+                                endpoint.Description = computerDescription;
+                                endpoint.RDPGW_Allow = computerGroupMembership;
 
-                        });
-                    }
-                    else
-                    {
-                        Parallel.ForEach(endPoints, (endpoint) =>
+                            });
+                        }
+                        else
                         {
-                            bool computerGroupMembership = false;
-                            string computerDescription = string.Empty;
-                            ADObject computer = GetADObject(endpoint.Hostname, ADObjectClass.Computer);
-                            if (computer.DistingishedName != null)
+                            Parallel.ForEach(endPoints, (endpoint) =>
                             {
-                                computerGroupMembership = true;
-                            }
-                            if (computer.Description != null)
-                            {
-                                computerDescription = computer.Description;
-                            }
-                            endpoint.Description = computerDescription;
-                            endpoint.RDPGW_Allow = computerGroupMembership;
+                                bool computerGroupMembership = false;
+                                string computerDescription = string.Empty;
+                                ADObject computer = GetADObject(endpoint.Hostname, ADObjectClass.Computer);
+                                if (computer.DistingishedName != null)
+                                {
+                                    computerGroupMembership = true;
+                                }
+                                if (computer.Description != null)
+                                {
+                                    computerDescription = computer.Description;
+                                }
+                                endpoint.Description = computerDescription;
+                                endpoint.RDPGW_Allow = computerGroupMembership;
 
-                        });
+                            });
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                WriteError((string.Format("Failed to query database for endpoints based on the username {0} with error {1}", userName, ex)), 1220);
+                WriteError((string.Format("Failed to query database for endpoints based on the usernames {0} with error {1}", String.Join(";", userNames), ex)), 1220);
             }
             Endpoint customEndpoint = new Endpoint("Custom", "N/A", "N/A", "N/A", false );
             endPoints.Add(customEndpoint);
@@ -326,7 +400,7 @@ namespace RDP_FrontEnd
             string selectedUser = (ComboBox_UsernameOptions.SelectedItem as ComboBoxItem).Content.ToString();
             foreach (Endpoint endpoint in endpoints)
             {
-                if ((endpoint.LastLoggedOnUser.ToString() == selectedUser & endpoint.RDPGW_Allow) || endpoint.Hostname == "Custom")
+                if (string.Equals(endpoint.LastLoggedOnUser.ToString(), selectedUser, StringComparison.CurrentCultureIgnoreCase) || endpoint.Hostname == "Custom")
                 {
                     DataGrid_KnownEndpoints.Items.Add(endpoint);
                 }
@@ -460,7 +534,7 @@ namespace RDP_FrontEnd
                     {
                         if (IsPortOpen(hostName, 3389, 5))
                         {
-                            WriteInfo(string.Format("User {0} initiated connection to Computer {1}", whoseRunning, hostName), 1010);
+                            WriteInfo(string.Format("User {0} initiated connection to Computer {1}", whoIsRunning, hostName), 1010);
                             Process mstsc = new Process();
                             mstsc.StartInfo.FileName = "mstsc.exe";
                             mstsc.StartInfo.Arguments = string.Format("/v:{0} /public {1} {2}", hostName, (MenuItem_MultiMon.IsChecked == true ? "/MultiMon" : string.Empty), (MenuItem_AdminSession.IsChecked == true ? "/admin" : string.Empty));
@@ -499,6 +573,7 @@ namespace RDP_FrontEnd
             ConditionalRDPConnection(selectedEndpoint);
         }
 
+        #region logging methods
         private void WriteLog(string message, EventLogEntryType eventLogEntryType, Int32 eventID)
         {
             using (EventLog eventLog = new EventLog("Application"))
@@ -522,5 +597,6 @@ namespace RDP_FrontEnd
         {
             WriteLog(message, EventLogEntryType.Warning, eventID);
         }
+        #endregion
     }
 }
